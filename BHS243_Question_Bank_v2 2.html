@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BHS 243 — Question Bank v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+  :root {
+    --bg: #0f1117; --surface: #181c27; --card: #1e2333;
+    --accent: #e8c87a; --accent2: #7ab8e8; --accent3: #e87ab0;
+    --correct: #4caf7d; --wrong: #e05c5c;
+    --text: #e8e4d8; --muted: #7a7f95; --border: #2a2f45;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Source Serif 4', Georgia, serif; font-size: 16px; line-height: 1.7; min-height: 100vh; }
+  header { background: linear-gradient(135deg, #0f1117 0%, #1a1f30 50%, #0f1520 100%); border-bottom: 1px solid var(--border); padding: 3rem 2rem 2rem; text-align: center; position: relative; overflow: hidden; }
+  header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(232,200,122,0.08) 0%, transparent 70%); }
+  header h1 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; letter-spacing: -1px; color: var(--accent); position: relative; }
+  header p { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; position: relative; }
+  .stats-bar { display: flex; justify-content: center; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; position: relative; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1.2rem; font-size: 0.85rem; }
+  .stat span { color: var(--accent); font-weight: 600; }
+  .controls { max-width: 900px; margin: 2rem auto; padding: 0 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+  .topic-filter { display: flex; gap: 0.5rem; flex-wrap: wrap; flex: 1; }
+  .filter-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted); padding: 0.4rem 0.9rem; border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-family: inherit; transition: all 0.2s; }
+  .filter-btn:hover, .filter-btn.active { background: var(--accent); color: #0f1117; border-color: var(--accent); font-weight: 600; }
+  .score-display { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.85rem; white-space: nowrap; }
+  .score-display span { color: var(--accent); font-weight: 700; }
+  .questions-container { max-width: 900px; margin: 0 auto 4rem; padding: 0 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+  .topic-header { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-top: 1rem; display: flex; align-items: center; gap: 0.75rem; }
+  .topic-header .topic-icon { font-size: 1.2rem; }
+  .q-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; transition: border-color 0.2s; position: relative; }
+  .q-card:hover { border-color: var(--muted); }
+  .q-card.answered-correct { border-color: var(--correct); }
+  .q-card.answered-wrong { border-color: var(--wrong); }
+  .q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+  .q-num { font-size: 0.75rem; color: var(--muted); font-style: italic; }
+  .q-badge { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .badge-high { background: rgba(232,122,176,0.15); color: var(--accent3); border: 1px solid rgba(232,122,176,0.3); }
+  .badge-med { background: rgba(122,184,232,0.15); color: var(--accent2); border: 1px solid rgba(122,184,232,0.3); }
+  .badge-tricky { background: rgba(232,200,122,0.15); color: var(--accent); border: 1px solid rgba(232,200,122,0.3); }
+  .q-text { font-size: 1rem; color: var(--text); margin-bottom: 1rem; font-weight: 400; }
+  .options { display: flex; flex-direction: column; gap: 0.5rem; }
+  .option { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 1rem; cursor: pointer; display: flex; align-items: flex-start; gap: 0.75rem; transition: all 0.15s; font-family: inherit; font-size: 0.95rem; color: var(--text); text-align: left; width: 100%; }
+  .option:hover:not(:disabled) { background: #252a3d; border-color: var(--muted); }
+  .option:disabled { cursor: default; }
+  .option.correct { background: rgba(76,175,125,0.12); border-color: var(--correct); color: #a8e6c3; }
+  .option.wrong { background: rgba(224,92,92,0.12); border-color: var(--wrong); color: #f0a0a0; }
+  .option.reveal-correct { background: rgba(76,175,125,0.08); border-color: rgba(76,175,125,0.5); }
+  .opt-letter { font-weight: 700; font-size: 0.85rem; min-width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; background: var(--border); color: var(--muted); flex-shrink: 0; margin-top: 1px; }
+  .option.correct .opt-letter { background: var(--correct); color: #fff; }
+  .option.wrong .opt-letter { background: var(--wrong); color: #fff; }
+  .option.reveal-correct .opt-letter { background: rgba(76,175,125,0.5); color: #fff; }
+  .explanation { margin-top: 1rem; padding: 0.9rem 1rem; background: var(--surface); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; font-size: 0.9rem; color: #c8c4b8; display: none; }
+  .explanation.show { display: block; }
+  .explanation strong { color: var(--accent); }
+  .hidden { display: none !important; }
+  .progress-wrap { max-width: 900px; margin: 0 auto 1rem; padding: 0 1.5rem; }
+  .progress-bar-bg { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width 0.3s; width: 0%; }
+  .reset-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0.4rem 1rem; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.8rem; transition: all 0.2s; }
+  .reset-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+  @media (max-width: 600px) { .controls { flex-direction: column; } .q-card { padding: 1.1rem; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>BHS 243 — Question Bank</h1>
+  <p>Made by Mohammed Baagag</p>
+  <div class="stats-bar">
+    <div class="stat">Total: <span id="totalCount">0</span> Questions</div>
+    <div class="stat">Topics: <span>7</span></div>
+    <div class="stat">Score: <span id="headerScore">0 / 0</span></div>
+  </div>
+</header>
+<div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div></div>
+<div class="controls">
+  <div class="topic-filter" id="topicFilter">
+    <button class="filter-btn active" data-topic="all">All Topics</button>
+    <button class="filter-btn" data-topic="1">L1: Prenatal</button>
+    <button class="filter-btn" data-topic="2">L2: Social Dev I</button>
+    <button class="filter-btn" data-topic="3">L3: Social Dev II</button>
+    <button class="filter-btn" data-topic="4">L4: Cognitive I</button>
+    <button class="filter-btn" data-topic="5">L5: Cognitive II</button>
+    <button class="filter-btn" data-topic="6">L6: Childhood</button>
+    <button class="filter-btn" data-topic="7">L7: Late Child</button>
+  </div>
+  <div class="score-display">✓ <span id="scoreDisplay">0</span> correct</div>
+  <button class="reset-btn" onclick="resetAll()">↺ Reset</button>
+</div>
+<div class="questions-container" id="qContainer"></div>
+<script>
+const questions = [
+
+// ══════════════════════════════════════════════
+// LECTURE 1 — PRENATAL & INTRO DEVELOPMENT
+// ══════════════════════════════════════════════
+{topic:1,difficulty:"high",text:"Which of the following fetal movements is the LAST to appear during gestation?",
+options:["Breathing movements","Hand-face contact","Eye movements","Arm and leg twitches"],
+answer:2,explanation:"Eye movements appear at 16 weeks — the latest of all fetal movements. Breathing, hand-face contact, and arm/leg twitches all appear at ~10 weeks; sucking/swallowing at 12 weeks; yawning at 11 weeks."},
+
+{topic:1,difficulty:"high",text:"What is the correct order of the three prenatal periods?",
+options:["Embryonic → Germinal → Fetal","Germinal → Fetal → Embryonic","Germinal → Embryonic → Fetal","Fetal → Germinal → Embryonic"],
+answer:2,explanation:"Germinal (fertilization to ~2 weeks) → Embryonic (weeks 3–8, organogenesis) → Fetal (week 9 to labor). Motor, sensory, and learning behaviors originate during the fetal period (from the 9th week)."},
+
+{topic:1,difficulty:"high",text:"Fetal hearing begins at approximately which gestational age?",
+options:["10 weeks","16 weeks","22–24 weeks","30 weeks"],
+answer:2,explanation:"Hearing begins at 22–24 weeks. The in-utero environment is filled with GI sounds and heartbeats — a noisy low-frequency background — which is why fetal frequency perception is biased toward lower frequencies."},
+
+{topic:1,difficulty:"high",text:"A pregnant woman is prescribed warfarin. Which fetal complication is she most at risk of causing?",
+options:["Limb malformations","Tooth malformations","Microcephaly and mental retardation","Fetal/newborn addiction"],
+answer:2,explanation:"Warfarin → microcephaly and mental retardation. Thalidomide → limb malformations; Tetracycline → tooth malformations; Heroin → neonatal addiction; Alcohol → Fetal Alcohol Syndrome; Smoking → spontaneous abortion."},
+
+{topic:1,difficulty:"med",text:"Which teratogen causes tooth malformation?",
+options:["Warfarin","Thalidomide","Tetracycline","Heroin"],
+answer:2,explanation:"Tetracycline specifically causes tooth malformation. This is why tetracycline antibiotics are contraindicated during pregnancy and in young children."},
+
+{topic:1,difficulty:"med",text:"Rubella infection during pregnancy is associated with which fetal complication?",
+options:["Limb malformations","Congenital deafness","Microcephaly","Tooth malformation"],
+answer:1,explanation:"Rubella (German measles) is classically associated with congenital deafness, along with cataracts and congenital heart defects. Each teratogen causes a specific, predictable pattern of malformation."},
+
+{topic:1,difficulty:"high",text:"The three cellular stages of brain development in correct sequential order are:",
+options:["Migration → Proliferation → Myelination","Myelination → Migration → Proliferation","Proliferation → Migration → Myelination","Proliferation → Myelination → Migration"],
+answer:2,explanation:"Brain cellular development: (1) Proliferation — neurons are produced (weeks 10–26); (2) Migration — neurons move to correct positions; (3) Myelination — axons are insulated. A problem at any stage can cause syndromes incompatible with life."},
+
+{topic:1,difficulty:"high",text:"All neurons a person will ever have are formed by which trimester?",
+options:["1st trimester","2nd trimester","3rd trimester","After birth"],
+answer:1,explanation:"All neurons are formed by the END of the 2nd trimester (weeks 10–26 rapid proliferation). After that, apoptosis removes excess neurons — what remains is what is needed for function. This is why prenatal insults in this window are so damaging."},
+
+{topic:1,difficulty:"high",text:"Which fetal behavioral state is the MOST COMMON, occurring at approximately 50%?",
+options:["State 1F — Quiet Sleep","State 2F — Active Sleep","State 3F — Quiet Awake","State 4F — Active Awake"],
+answer:1,explanation:"State 2F (Active Sleep) is the most common fetal behavioral state at ~50%. It features frequent body movements, eye movements, and frequent HR acceleration. State 4F (Active Awake) is the LEAST common — most metabolically demanding."},
+
+{topic:1,difficulty:"high",text:"Which fetal behavioral state is characterized by NO gross body movements, eye movements present, and NO heart rate acceleration?",
+options:["State 1F — Quiet Sleep","State 2F — Active Sleep","State 3F — Quiet Awake","State 4F — Active Awake"],
+answer:2,explanation:"State 3F (Quiet Awake): no gross body movements, eye movements present, no HR acceleration — a brief, transient state. State 1F (Quiet Sleep): occasional startles, no eye movements, stable HR."},
+
+{topic:1,difficulty:"tricky",text:"A mother reports feeling her baby move for the first time. Ultrasound has been detecting movements since 8 weeks. She is most likely at which gestational week?",
+options:["8 weeks","14 weeks","18 weeks","26 weeks"],
+answer:2,explanation:"Mothers first feel fetal movements (quickening) at approximately 18 weeks, despite US detecting movements from 8 weeks. The gap exists because the fetus is small and surrounded by amniotic fluid, dampening the sensation."},
+
+{topic:1,difficulty:"high",text:"A 5-month-old infant is pulled from lying to sitting and their head falls backward. What does this indicate?",
+options:["Normal finding at 5 months","Possible neuromuscular disorder or floppy baby syndrome","Normal — head control develops at 6 months","Expected in all premature infants"],
+answer:1,explanation:"Head lag should be ABSENT by 5 months. Persistent head lag after 5 months = red flag for neuromuscular disorder, floppy baby syndrome, or Down syndrome. No head lag when pulled to sit is the 5-month milestone."},
+
+{topic:1,difficulty:"high",text:"Which of the following motor milestones is matched CORRECTLY?",
+options:["3 months — sits independently","5 months — no head lag when pulled to sit","8 months — transfers objects hand to hand","11 months — crawls on hands and knees"],
+answer:1,explanation:"5 months → no head lag. Sitting independently = 6–8 months; transferring objects = 6 months; crawling = 8–9 months; pincer grasp = 11–12 months; independent walking = 12–15 months."},
+
+{topic:1,difficulty:"med",text:"Which sense is the FIRST to develop in the fetus?",
+options:["Hearing","Vision","Touch","Pain"],
+answer:2,explanation:"Touch is the first sense to develop at 8 weeks — the fetus moves away from touch stimuli. Pain pathways form at 26 weeks; hearing at 22–24 weeks. Vision is the LEAST stimulated (eyes are closed and it's dark in utero)."},
+
+{topic:1,difficulty:"high",text:"Neural pain pathways are formed at which gestational week?",
+options:["10 weeks","16 weeks","22 weeks","26 weeks"],
+answer:3,explanation:"Neural pain pathways form at 26 weeks. Before this, behavioral reactions to painful stimuli cannot occur through neural pain pathways. Touch (8 weeks), hearing (22–24 weeks), and eye movements (16 weeks) all precede this."},
+
+{topic:1,difficulty:"high",text:"Fetal learning via habituation is best described as:",
+options:["An increase in response with repeated stimuli","A waning of response to repeated stimuli, indicating memory formation","The inability to detect sensory stimuli","Learning that only begins after birth"],
+answer:1,explanation:"Habituation = waning (gradual decrease) of response to a repeated stimulus. This indicates the fetus has MEMORIZED that stimulus — it is the most basic form of learning and evidence that fetal learning occurs in utero."},
+
+{topic:1,difficulty:"tricky",text:"Brain development follows a cephalocaudal direction AND higher vs. lower structures develop in which order?",
+options:["Higher cortical areas first, then hindbrain","Hindbrain and brainstem first, then midbrain, then cerebral cortices","All areas develop simultaneously","Cerebellum first, then frontal lobe"],
+answer:1,explanation:"Cephalocaudal = head to tail. But within brain structures: LOWER structures (hindbrain, brainstem) develop first, then midbrain, then cerebral cortices. The frontal lobe — responsible for personality — is last to mature, which is why BHS is so critical to understand."},
+
+{topic:1,difficulty:"med",text:"Why does the brain-to-body ratio decrease across fetal development?",
+options:["Brain stops growing after the 1st trimester","Body grows faster relative to brain, AND neuronal apoptosis reduces brain volume","Only the cerebellum grows after birth","The skull prevents brain expansion"],
+answer:1,explanation:"The brain-to-body ratio changes because: (1) the body grows disproportionately faster; (2) neuronal apoptosis removes excess neurons. The birth canal also physically limits how large the head can be at delivery."},
+
+{topic:1,difficulty:"high",text:"An infant can use a pincer grasp by age:",
+options:["8 months","6 months","11–12 months","3 months"],
+answer:2,explanation:"Pincer grasp (picking up tiny objects between thumb and index finger) develops at 11–12 months. This is an important milestone — watch for choking hazards. Children who can end up in the ER with lodged items!"},
+
+{topic:1,difficulty:"med",text:"Smooth pursuit eye movement is best described as:",
+options:["Moving gaze faster than the object","Moving gaze at the same speed as a moving object","Moving gaze randomly","Only possible after 12 months"],
+answer:1,explanation:"Smooth pursuit = following a moving object at its speed with the eyes. Initially there is a lag (the gaze trails behind), and over time it becomes synchronized. Visual focus is generally achieved by 3 months."},
+
+{topic:1,difficulty:"high",text:"Which of the following is NOT achieved by 10 weeks of gestation?",
+options:["Breathing movements","Hand-face contact","Sucking and swallowing","Arm and leg twitches"],
+answer:2,explanation:"Sucking and swallowing begin at 12 weeks — NOT 10 weeks. By 10 weeks: breathing movements, arm/leg twitches, hand-face contact, and stretch/rotation are all present. Yawning begins at 11 weeks."},
+
+// ══════════════════════════════════════════════
+// LECTURE 2 — INFANT SOCIAL DEVELOPMENT I
+// ══════════════════════════════════════════════
+{topic:2,difficulty:"high",text:"At what age do infants form a facial prototype, and what is its function?",
+options:["2 months — template for mother's face only","6 months — reference standard for categorizing and rating attractiveness of new faces","12 months — enables mirror self-recognition","4 months — enables father's face recognition"],
+answer:1,explanation:"Infants form a facial prototype by 6 months. This prototype — built from average faces of the surrounding population — becomes the reference for attractiveness (symmetry) and for categorizing novel faces. By 36 months, interest in novel faces is well established."},
+
+{topic:2,difficulty:"high",text:"Regarding recognition of the MOTHER'S face: at 2 months, infants recognize her using internal features. By 4 months, they recognize her by:",
+options:["Internal features only","External features only","Both internal and external features equally","Configural processing only"],
+answer:1,explanation:"By 4 months, infants recognize the MOTHER by EXTERNAL features only (hairline, chin, face outline). This reflects cognitive development — they have already mastered her internal features, so they now use external features as a quicker, more efficient recognition cue."},
+
+{topic:2,difficulty:"high",text:"Regarding development of GENERAL face processing during infancy: at 1 month infants look at external features. By 2 months, they shift to looking at:",
+options:["External features only","The hairline and ears","Internal features (eyes, nose, mouth)","The whole face equally"],
+answer:2,explanation:"By 2 months, infants shift from external features (hairline, outline) to INTERNAL features (eyes, nose, mouth) as cortical regions become more specialized and visual acuity improves. Preference for faces disappears at 1–2 months then reappears at 2–3 months."},
+
+{topic:2,difficulty:"high",text:"In Tronick's Still Face Experiment, what are the three phases in order?",
+options:["Still face → Play → Reunion","Play → Still face → Reunion","Reunion → Play → Still face","Play → Reunion → Still face"],
+answer:1,explanation:"The three phases: (1) Play — normal interaction, baby is happy; (2) Still face — mother becomes expressionless, baby becomes distressed; (3) Reunion — mother returns to normal. The sudden change of facial behavior has MORE negative impact than simply breaking eye contact."},
+
+{topic:2,difficulty:"high",text:"Which of Bowlby's attachment phases involves the infant becoming attached to MORE THAN ONE person?",
+options:["Pre-attachment (0–3 months)","Attachment in the making (8/12 weeks – 6 months)","Clear-cut attachment (6–24 months)","4th phase (25+ months)"],
+answer:1,explanation:"Attachment in the Making (8/12 weeks – 6 months): the infant expands their attachment network beyond the mother to include father, siblings, and extended family members in their environment."},
+
+{topic:2,difficulty:"high",text:"According to Mary Ainsworth's Strange Situation, which attachment type is characterized by an infant who cries when the mother leaves but cannot be comforted upon her return?",
+options:["Secure","Avoidant","Ambivalent","Disorganized"],
+answer:2,explanation:"Ambivalent attachment: wants caregiver back but cannot use the contact to calm down — continues crying, resists toys, remains angry. This often reflects inconsistent maternal care. Avoidant = ignores mother on reunion. Disorganized = rare, seen in severe deprivation."},
+
+{topic:2,difficulty:"high",text:"Which primary emotion develops LATEST in infancy?",
+options:["Joy (3 months)","Anger (4–6 months)","Disgust (birth)","Fear (6–8 months)"],
+answer:3,explanation:"Fear is the LAST primary emotion to develop (6–8 months) because it requires COGNITION to assess threat. Primary emotions in order: Disgust/Surprise (birth) → Joy (3 months) → Anger (4–6 months) → Fear (6–8 months)."},
+
+{topic:2,difficulty:"high",text:"Which correctly matches the timing of self-consciousness and self-conscious evaluative emotions?",
+options:["Both emerge in the middle of the 1st year","Self-consciousness = mid-2nd year; self-conscious evaluative emotions (empathy, shame, guilt) = mid-3rd year","Self-conscious emotions emerge before self-consciousness","Both emerge only in adolescence"],
+answer:1,explanation:"Self-consciousness (experiencing others' emotional states) emerges mid-2nd year. True self-conscious EVALUATIVE emotions (empathy, jealousy, embarrassment, shame, guilt, pride) emerge mid-3rd year — requiring higher cognition, self-awareness, and a set of standards to evaluate against."},
+
+{topic:2,difficulty:"high",text:"Which of the following is NOT a self-conscious emotion?",
+options:["Jealousy","Empathy","Shame","Surprise","Embarrassment"],
+answer:3,explanation:"Surprise is a PRIMARY emotion — present from birth alongside disgust. Self-conscious emotions (mid-3rd year) include: empathy, jealousy, embarrassment, shame, guilt, and pride. These require self-awareness and a set of evaluative standards."},
+
+{topic:2,difficulty:"high",text:"Which of the following is NOT a primary emotion?",
+options:["Joy","Anger","Nervousness","Surprise","Sadness"],
+answer:2,explanation:"Nervousness is NOT a primary emotion — it is a COMPLEX emotion because many factors weigh into it. Primary emotions (present by 6 months): Joy, Sadness, Disgust, Anger, Fear, Surprise. These are basic, innate, and universal."},
+
+{topic:2,difficulty:"high",text:"The Rouge Test assesses which developmental milestone, and at what age is it typically passed?",
+options:["Object permanence at 12 months","Visual self-recognition at 18–24 months","Stranger anxiety at 8 months","Theory of mind at 4 years"],
+answer:1,explanation:"The Rouge Test assesses VISUAL SELF-RECOGNITION. A red mark is placed on the child's nose; passing = touching their OWN nose (not the mirror). Typically achieved by 18 months (begins) to 24 months (fully reliable). Linked to the beginning of memory and sense of self."},
+
+{topic:2,difficulty:"high",text:"At 8 months, what is achieved in terms of facial recognition of self?",
+options:["Passes the Rouge Test","Discriminates self from others in moving images","Looks longer at faces of OTHERS","Recognizes father's face reliably"],
+answer:2,explanation:"At 8 months: infants look longer at faces of OTHERS because they have already mastered their own face. At 4–5 months: discriminate between moving images of self and others. At 18 months: pass Rouge Test. At 24 months: full self-recognition in mirror."},
+
+{topic:2,difficulty:"high",text:"Facial expressions must be prototypical for infants under which age?",
+options:["6 months","8 months","10 months","12 months"],
+answer:2,explanation:"Under 10 months, facial expressions MUST be prototypical — the expression must clearly and unambiguously match the emotion (smile = positive, frown = negative). A caregiver who smiles when hitting confuses the infant. After 10 months, they can handle more ambiguous expressions."},
+
+{topic:2,difficulty:"high",text:"According to D.W. Winnicott, which concept refers to the physical and emotional support that makes an infant feel safe?",
+options:["Transitional object","True self","Holding environment","Good enough mothering"],
+answer:2,explanation:"Holding environment = the physical and emotional support that creates safety and fosters trust. In therapy, the therapeutic relationship itself IS the holding environment. Winnicott emphasized that boundaries are essential — a therapist must have empathy but cannot merge with the patient."},
+
+{topic:2,difficulty:"high",text:"A patient feels relieved after calling their therapist and reaching voicemail. Which Winnicott concept does this illustrate?",
+options:["Holding environment","Good enough mothering","Transitional object","True self vs false self"],
+answer:2,explanation:"Transitional object: the voicemail (an extension of the therapist) provides comfort in the therapist's absence — not a replacement but an EXTENSION of the safe figure. Similarly, a child's security blanket is an extension of the safe caregiver."},
+
+{topic:2,difficulty:"high",text:"The right hemisphere is primarily responsible for which function related to face processing?",
+options:["Language production during face recognition","Face recognition and categorization","Color perception of facial features","Emotional production only"],
+answer:1,explanation:"The RIGHT hemisphere is the dominant processor for face recognition and categorization. This is why right-sided brain lesions can specifically impair the ability to recognize faces (prosopagnosia) while leaving other visual functions intact."},
+
+{topic:2,difficulty:"tricky",text:"Infants are more likely to recognize faces of which of the following?",
+options:["Male faces more than female faces","Faces of another race more than own race","Female faces more than male faces, and faces of own race","Inverted faces more than upright faces"],
+answer:2,explanation:"Infants show better recognition for: (1) FEMALE faces over male faces (females have finer hair, more facial detail); (2) faces of their OWN race (own-race advantage). This reflects the face prototype built from their most frequently encountered faces."},
+
+{topic:2,difficulty:"high",text:"John Bowlby's clear-cut attachment phase occurs between which ages?",
+options:["0–3 months","8/12 weeks – 6 months","6–24 months","25+ months"],
+answer:2,explanation:"Clear-cut attachment (6–24 months): infant PROTESTS separation — cries when caregiver leaves. This is the phase used to diagnose separation anxiety. The caregiver can be distracted with sleep or another person. By 25+ months (4th phase) the child understands mother is independent."},
+
+{topic:2,difficulty:"high",text:"Which of the following correctly describes the difference between true self and false self (Winnicott)?",
+options:["True self = social mask; false self = authentic core","True self = authentic expression of who one really is; false self = persona shown to the world","True self is innate; false self develops only in adolescence","Both selves are equally healthy expressions of identity"],
+answer:1,explanation:"True self = authentic, genuine expression of one's core identity (shown in safe, trusting relationships). False self = the adapted persona presented to meet external expectations. Dominance of the false self leads to personality problems and an inability to form genuine connections."},
+
+{topic:2,difficulty:"high",text:"By what age do infants categorize facial expressions, recognizing that similar expressions signal the same emotion?",
+options:["3 months","4–7 months","10 months","12 months"],
+answer:1,explanation:"By 4–7 months, infants categorize similar expressions as belonging to the same emotion — connecting facial movement patterns to emotional categories. This is CATEGORIZATION, which is different from UNDERSTANDING (knowing what it means) which comes much later."},
+
+{topic:2,difficulty:"tricky",text:"Under 8 months, infants rely on _____ to categorize emotions; by 8 months they rely on _____.",
+options:["Expressive aspects; featural info","Featural info; expressive aspects","Vocal cues; visual cues","Visual cues; vocal cues"],
+answer:1,explanation:"Under 8 months: infants rely on FEATURAL INFO (specific facial features — shape of mouth, eyebrows) to categorize emotions. By 8 months: they shift to EXPRESSIVE ASPECTS (the overall dynamic expression pattern). They can also match facial expressions to voices (intermodal matching)."},
+
+// ══════════════════════════════════════════════
+// LECTURE 3 — INFANT SOCIAL DEVELOPMENT II
+// ══════════════════════════════════════════════
+{topic:3,difficulty:"high",text:"A 20-month-old child picks up a banana, holds it to their ear, and pretends to talk into it. This is:",
+options:["Transitional play","Sequential pretense","Appropriate combinatorial activity","Substitution pretense"],
+answer:3,explanation:"Substitution pretense (Level 8) — the MOST ADVANCED level of symbolic play. An object is used to represent something completely different (banana = telephone). This requires the highest degree of representational thinking."},
+
+{topic:3,difficulty:"high",text:"An infant puts a toy vehicle into a toy bed. According to Tamis-LeMonda & Bornstein, this is:",
+options:["Unitary functional activity","Inappropriate combinatorial activity","Appropriate combinatorial activity","Substitution pretense"],
+answer:1,explanation:"Inappropriate combinatorial activity (Level 2): two objects are combined in a way that does NOT reflect real-life function. Appropriate combinatorial = objects combined correctly (person in vehicle). Unitary functional = single object used alone correctly."},
+
+{topic:3,difficulty:"high",text:"Which level of play involves the infant holding a phone receiver to their ear without making vocal sounds?",
+options:["Sequential pretense","Substitution pretense","Transitional play","Other-directed pretense"],
+answer:2,explanation:"Transitional play (Level 4) — the BRIDGE between exploratory and symbolic play. The infant shows early signs of imagination (holding phone to ear) but has not fully committed to symbolic enactment (not talking). Occurs more frequently at 13 months than 20 months."},
+
+{topic:3,difficulty:"high",text:"Which of the following is a SOCIAL function of play?",
+options:["Divergent thinking","Acquisition of information and skills","Communicative reciprocity","Emotional regulation"],
+answer:2,explanation:"Communicative reciprocity (turn-taking) falls under the SOCIAL domain of play. Cognitive domain includes: divergent thinking, acquisition of skills, symbolic play, language development. Intrapsychological domain includes: emotional regulation and expanding emotions."},
+
+{topic:3,difficulty:"high",text:"Divergent thinking during play is MOST likely to occur during:",
+options:["Structured play with parents","Unstructured free play with peers","Educational tablet games","Organized sports"],
+answer:1,explanation:"Divergent thinking (creativity, innovation, novel combinations) is most observed during UNSTRUCTURED peer play. Parents tend to instruct and correct (teaching object functions). Peers play freely without rules or authority, allowing imagination to run free."},
+
+{topic:3,difficulty:"high",text:"Which of the following is NOT a cognitive function of play?",
+options:["Creativity","Divergent thinking","Acquisition of information and skills","Expressing emotions","Language development"],
+answer:3,explanation:"Expressing emotions falls under the INTRAPSYCHOLOGICAL domain (arousal, emotions, regulation) — NOT cognitive. Cognitive domain: creativity, divergent thinking, acquisition of skills, symbolic/representational thinking, language development."},
+
+{topic:3,difficulty:"high",text:"By what age can an infant differentiate between a happy and an angry face?",
+options:["4 months","6 months","8 months","12 months"],
+answer:2,explanation:"By 8 months, infants can reliably differentiate between happy and angry faces. Clinically: infants who categorize HAPPY expressions first have likely experienced a positive emotional environment. Fearful-first may signal exposure to threat or abuse."},
+
+{topic:3,difficulty:"high",text:"Canonical babbling (e.g., ba-ba, ga-ga) begins at approximately:",
+options:["2–3 months","4–5 months","6–7 months","10–12 months"],
+answer:2,explanation:"Canonical/reduplicated babbling begins at 6–7 months (Stage 4). Both verbal AND signed babbling require INPUT to the child. Even deaf infants can produce some sounds, but canonical babbling requires auditory/visual input to develop normally."},
+
+{topic:3,difficulty:"high",text:"The 5 stages of vocal development in correct order are:",
+options:["Cooing → Reflexive → Experimenting → Babbling → Jargon","Reflexive → Cooing → Experimenting → Babbling → Jargon","Babbling → Cooing → Reflexive → Experimenting → Jargon","Reflexive → Babbling → Cooing → Experimenting → Jargon"],
+answer:1,explanation:"Stage 1 (0–2 mo): Reflexive vocalization → Stage 2 (2–3 mo): Cooing → Stage 3 (4–6 mo): Experimenting with noises → Stage 4 (6–7 mo): Canonical babbling → Stage 5 (12 mo): Jargon (proper intonation, unclear words)."},
+
+{topic:3,difficulty:"high",text:"Following gaze and pointing gestures — which of the following is TRUE?",
+options:["Infants follow adult gaze from birth","Before 8 months the ADULT follows the INFANT's gaze","By 8 months infants can follow most pointing gestures","Gaze-following is preserved in autism spectrum disorder"],
+answer:1,explanation:"Before 8 months: the ADULT follows the INFANT's gaze (not vice versa). Infants learn joint reference/following adult gaze by 12 months. By 14 months: can follow most pointing gestures (milestone). Gaze-following and joint attention are ABSENT in ASD and severe intellectual disability."},
+
+{topic:3,difficulty:"tricky",text:"A mother has a specific phobia of spiders. Her 12-month-old sees her frightened face when a spider appears. What is the likely outcome?",
+options:["The infant will be curious about the spider","The infant will develop a conditioned fear of spiders through social referencing","The infant is too young to be affected","The infant will approach the spider to investigate"],
+answer:1,explanation:"Social referencing: at 12 months, infants use the caregiver's face to guide behavior in ambiguous situations. If the caregiver shows FEAR, the infant adopts that fear response. This is how specific phobias can be transmitted across generations — an acquired form of fear."},
+
+{topic:3,difficulty:"high",text:"Communicative reciprocity (conversational turn-taking) is well-established by:",
+options:["End of year 1","End of year 2","Age 3","Age 4"],
+answer:1,explanation:"Communicative reciprocity is well-established by end of YEAR 2. It begins with early mother-infant interaction patterns, reinforced by games at end of year 1, and becomes fully reciprocal in peer communication by end of year 2."},
+
+{topic:3,difficulty:"med",text:"Which of the following is NOT a functional unit/domain of play?",
+options:["Mastery domain","Mental math solving","Social domain","Cultural domain"],
+answer:1,explanation:"Mental math solving is NOT a play domain. The 4 main play domains are: (1) Intrapsychological (emotions, arousal); (2) Mastery (motivation, persistence); (3) Cognitive (skills, language, creativity); (4) Social (reciprocity, empathy); (5) Cultural (gender roles, values)."},
+
+{topic:3,difficulty:"high",text:"In the cultural domain of play, which of the following is TRUE?",
+options:["Tablets fully replace the role of play","After year 2, pretend play develops important cultural and gender-type understanding","Parents are better than peers for cultural learning","Cultural learning in play begins only in adolescence"],
+answer:1,explanation:"After year 2, pretend play plays an important role in developing cultural understanding, especially gender-type information. Tablets with informative games help with information but CANNOT replace reciprocal play. Organizing and aligning things in play does NOT necessarily mean OCD."},
+
+{topic:3,difficulty:"high",text:"A 12-month-old child looks at the mother's face to seek information about whether a new situation is safe. This is called:",
+options:["Stranger anxiety","Social referencing","Transitional object use","Intermodal matching"],
+answer:1,explanation:"Social referencing: using the caregiver's facial expression as a guide in ambiguous/uncertain situations. A 3-month-old looks at the mother's face for PLEASURE; a 12-month-old looks for INFORMATION about the world. This is a key developmental shift."},
+
+// ══════════════════════════════════════════════
+// LECTURE 4 — INFANT COGNITIVE DEVELOPMENT I
+// ══════════════════════════════════════════════
+{topic:4,difficulty:"high",text:"A 10-month-old watches a toy hidden under cup A three times and retrieves it. It is then hidden under cup B while watching. The infant still reaches for cup A. This is:",
+options:["Object permanence failure","The A-not-B error","Egocentrism","Mental representation failure"],
+answer:1,explanation:"The A-not-B error is characteristic of Stage 4 (8–12 months). The infant searches at A (previous success) despite watching it hidden at B. Stage 5: searches at last location. Stage 6: contemplates multiple sites using mental representation."},
+
+{topic:4,difficulty:"high",text:"'Means-end behavior' — deliberately removing an obstacle to reach a goal — is characteristic of which sensorimotor stage?",
+options:["Stage 2 — Primary circular reactions","Stage 3 — Secondary circular reactions","Stage 4 — Coordination of secondary schemes","Stage 5 — Tertiary circular reactions"],
+answer:2,explanation:"Stage 4 (8–12 months): means-end behavior — the infant has both a GOAL and a PLAN. Example: pushing the examiner's hand away to reveal a hidden object. This is also the stage of the A-not-B error. Reflects increasing intentionality."},
+
+{topic:4,difficulty:"high",text:"An infant repeatedly drops objects from different heights to observe varying effects. This is:",
+options:["Stage 3 — Secondary circular reactions","Stage 4 — Coordination of secondary schemes","Stage 5 — Tertiary circular reactions","Stage 6 — Beginning of thought"],
+answer:2,explanation:"Stage 5 (Tertiary circular reactions, 12–18 months): the infant INTENTIONALLY VARIES actions to explore new outcomes. Novelty and exploration drive behavior. Dropping objects to see effects (will it break? how does it bounce?) is the hallmark."},
+
+{topic:4,difficulty:"high",text:"Stage 6 of the sensorimotor period (18–24 months) is characterized by:",
+options:["Repeated schemes centered on own body","Means-end behavior and A-not-B error","Mental representation — anticipating consequences WITHOUT acting","Tertiary circular reactions and novelty exploration"],
+answer:2,explanation:"Stage 6 (Beginning of Thought/Mental Representation, 18–24 months): the child can think through consequences WITHOUT physically doing them. Example: understanding 'don't touch — it's hot' without needing to touch. This marks the end of the sensorimotor period."},
+
+{topic:4,difficulty:"high",text:"Which of the following is characteristic of Piaget's PREOPERATIONAL stage (2–7 years)?",
+options:["Understands conservation and reversibility","Can think abstractly","Egocentric thinking, magical thinking, immanent justice — no logical operations","Develops moral sense and logical reasoning"],
+answer:2,explanation:"Preoperational (2–7 years): egocentric thinking, magical thinking, immanent justice (punishment follows bad behavior automatically), no conservation, no logical operations, theory of mind develops at 4–4.5 years. Cannot reason about haram/halal or moral dilemmas."},
+
+{topic:4,difficulty:"high",text:"A 5-year-old trips after doing something naughty and says 'I fell because I was bad.' This reflects:",
+options:["Egocentrism","Immanent justice","Magical thinking","Object permanence"],
+answer:1,explanation:"Immanent justice: the preoperational child believes that bad behavior is AUTOMATICALLY and IMMEDIATELY punished by nature/the universe. This is the seed of excessive guilt if reinforced. It reflects moral reasoning at the preoperational level."},
+
+{topic:4,difficulty:"high",text:"Piaget's concrete operations stage (7–11 years) is characterized by all of the following EXCEPT:",
+options:["Understanding conservation and reversibility","Logical reasoning about concrete things","Perspective-taking ability","Abstract and hypothetical-deductive reasoning"],
+answer:3,explanation:"Abstract/hypothetical-deductive reasoning is FORMAL OPERATIONS (11+ years) — NOT concrete operations. Concrete operations: conservation, reversibility, classification, perspective-taking, logical reasoning — but ONLY about tangible, real-world things, not abstractions."},
+
+{topic:4,difficulty:"high",text:"NOT all adolescents enter formal operations at the same time. This depends on:",
+options:["Age alone","Exposure, experiences, and capacity — parent restriction, intellectual disability, and impulsiveness can delay it","Gender only","Physical maturity (puberty)"],
+answer:1,explanation:"Entry into formal operations varies based on EXPOSURE, EXPERIENCES, and CAPACITY. Parental restriction, intellectual disability, and impulsiveness can all delay or prevent formal operations. Some individuals never fully reach this stage."},
+
+{topic:4,difficulty:"high",text:"In the Rod & Block experiment, why does a 4-month-old look LONGER at the broken rod (two pieces) than the complete rod?",
+options:["4-month-olds prefer broken stimuli","The 4-month-old expects rods to be continuous — the broken rod VIOLATES this expectation and is novel","4-month-olds cannot perceive complete rods","The broken rod has higher visual contrast"],
+answer:1,explanation:"The 4-month-old has learned (through experience) that objects are continuous. The COMPLETE rod = familiar/expected → habituates quickly. The BROKEN rod = novel/surprising → looks longer. NEWBORNS show no preference because they lack this prior knowledge of object continuity."},
+
+{topic:4,difficulty:"high",text:"Objectification in Piaget's theory refers to:",
+options:["The infant treating people as objects","Understanding that self and objects are DISTINCT, PERSISTENT across time, and follow CAUSAL RULES","The ability to name objects verbally","The infant's preference for objects over faces"],
+answer:1,explanation:"Objectification is the MAJOR cognitive achievement of the sensorimotor period: (1) Self ≠ objects/others; (2) Objects persist across time (object permanence); (3) World follows causal rules. Achieved through the development of schemes and representations in the first 2 years."},
+
+{topic:4,difficulty:"high",text:"Perceptual schemas differ from image schemas in that:",
+options:["Perceptual = function-based; image = appearance-based","Perceptual = appearance-based; image = function-based (mental representation)","Both are identical in categorization method","Image schemas develop before perceptual schemas"],
+answer:1,explanation:"Perceptual schemas: categorize based on APPEARANCE (all round things together). Image schemas: involve mental representation and categorize based on FUNCTION (all vehicles together regardless of shape). You first form a category (perceptual), THEN understand it (image/functional)."},
+
+{topic:4,difficulty:"high",text:"The Bayley Scales of Infant Development assess which of the following domains?",
+options:["Cognition and language only","Motor skills only","Cognition, language, motor, adaptive behavior, and social-emotional","IQ prediction for adulthood"],
+answer:2,explanation:"The Bayley Scales assess: Cognition, Language (receptive + expressive), Fine Motor, Gross Motor, Adaptive Behavior, and Social-Emotional. They are NOT reliable predictors of later IQ (cognitive abilities are still developing until age 6–7). They identify current developmental delays."},
+
+{topic:4,difficulty:"high",text:"Sequential touching (12–30 months) differs from generalized imitation (9–20 months) in that:",
+options:["Sequential touching presents categories SIMULTANEOUSLY; generalized imitation tests generalization to a real object from a model","Sequential touching uses verbal confirmation; generalized imitation does not","Both methods are identical in procedure","Generalized imitation is used for older infants"],
+answer:0,explanation:"Sequential touching: two category examples presented SIMULTANEOUSLY — infant explores sequentially. Generalized imitation: examiner demonstrates action on a small model → categorization confirmed when infant generalizes that action to a REAL object of the same category within a short time."},
+
+{topic:4,difficulty:"tricky",text:"A 12-month-old girl sees a toy hidden on her LEFT. She is then moved to face the OPPOSITE side of the table. Where will she most likely look?",
+options:["To her right (egocentric — same body side as before)","To her left (same BODY side, now opposite in space)","She will walk around to the original position","She will cry and not search"],
+answer:1,explanation:"This tests the allocentric vs egocentric spatial system. Younger infants are EGOCENTRIC — they search based on their OWN body position. So when moved, they reach LEFT (same relative to their body). Older infants develop an allocentric system — understanding that the toy's location is INDEPENDENT of their body position."},
+
+// ══════════════════════════════════════════════
+// LECTURE 5 — INFANT COGNITIVE DEVELOPMENT II
+// ══════════════════════════════════════════════
+{topic:5,difficulty:"high",text:"A 4-year-old has difficulty understanding sarcasm, jokes, and when to speak vs. stay quiet in conversation. Which language component is impaired?",
+options:["Phonology","Semantics","Grammar / Syntax","Pragmatics"],
+answer:3,explanation:"Pragmatics = HOW communication works in social context — implied meanings, turn-taking, sarcasm, social rules of language. Phonology = sounds; Semantics = word meanings; Grammar/Syntax = how words are combined and ordered in sentences."},
+
+{topic:5,difficulty:"high",text:"The four components of language in correct definition order are:",
+options:["Phonology=sounds; Semantics=grammar; Syntax=meanings; Pragmatics=communication","Phonology=sounds; Semantics=meanings; Grammar=combination; Pragmatics=how communication works","Semantics=sounds; Phonology=meanings; Grammar=communication; Pragmatics=combination","All four components refer to different aspects of written language only"],
+answer:1,explanation:"(1) Phonology = auditory units/sounds of language; (2) Semantics = meanings of words; (3) Grammar/Syntax = how words are combined and ordered; (4) Pragmatics = how communication works in social context. A child can have a deficit in one while others are intact."},
+
+{topic:5,difficulty:"high",text:"At 6–8 months, infants discriminate ALL speech sounds. By 10–12 months this changes. What happens?",
+options:["They lose all speech discrimination ability","Perceptual narrowing — they now only discriminate sounds relevant to their NATIVE language","They begin producing full words","They develop canonical babbling"],
+answer:1,explanation:"Perceptual narrowing (native language attunement): by 10–12 months, exposure has selectively STRENGTHENED neural pathways for native-language phonemes, making non-native contrasts harder to detect. At 6–8 months they are universal language discriminators."},
+
+{topic:5,difficulty:"high",text:"Visual Paired Comparison (VPC) task measures which type of memory?",
+options:["Recall memory","Procedural memory","Recognition memory","Declarative/episodic memory"],
+answer:2,explanation:"VPC measures RECOGNITION memory: infant is familiarized with stimulus → shown it paired with a novel stimulus → preference for novel = recognizes the familiar one. RECALL memory is tested by DEFERRED IMITATION (reproducing an action seen earlier without cues)."},
+
+{topic:5,difficulty:"high",text:"Why are memories from the first 2–3 years (preverbal period) nearly impossible to retrieve in adulthood — childhood amnesia?",
+options:["Hippocampus does not exist until age 3","Language acts as a scaffold for memory encoding; preverbal memories lack this framework and are very difficult to verbally retrieve","Emotional memories are repressed during toilet training","Stress hormones destroy early memories"],
+answer:1,explanation:"Language provides the organizational framework for encoding AND retrieving episodic memories. Preverbal memories lack this linguistic scaffold. Additionally, the medial temporal lobe (hippocampus) is still maturing in early infancy. Parents narrating childhood events help bridge this gap."},
+
+{topic:5,difficulty:"high",text:"Procedural memory differs from declarative memory in that:",
+options:["Procedural memory is easily verbalized and consciously recalled","Procedural memory (habits/skills) does NOT depend on the hippocampus and survives damage to the medial temporal lobe","Declarative memory is tested by deferred imitation","Procedural memory is lost before declarative memory in dementia"],
+answer:1,explanation:"Procedural (implicit) memory for habits and skills is stored in the basal ganglia/cerebellum — NOT the hippocampus. Patients with severe hippocampal damage can still LEARN and RETAIN motor skills (swimming, typing) while unable to form new declarative memories."},
+
+{topic:5,difficulty:"high",text:"By the end of the first year, a typically developing infant should be able to do all of the following EXCEPT:",
+options:["Segment words from fluent speech","Reduplicate babble (ba-ba)","Understand approximately 50 words","Produce full grammatical sentences"],
+answer:3,explanation:"Full grammatical sentences develop around age 3. By end of year 1: segment words from fluent speech, produce reduplicated babbling, understand ~50 words, and speak first words (~12 months). By 24 months: 2-word combinations. By 36 months: sentences."},
+
+{topic:5,difficulty:"high",text:"Deferred imitation tests which type of memory?",
+options:["Recognition memory — recognizing a previously seen object","Recall memory — remembering and reproducing an action seen earlier WITHOUT cues","Procedural memory — imitating a motor skill","Short-term memory — repeating an immediately preceding action"],
+answer:1,explanation:"Deferred imitation tests RECALL memory: the infant witnesses an action, and after a delay (hours to days), must RECALL and reproduce it without any cues or prompts. Adults with medial temporal lobe damage fail on deferred imitation tasks."},
+
+{topic:5,difficulty:"high",text:"A normally developing 16-month-old understands approximately how many words — and what distinguishes this from their productive vocabulary?",
+options:["~50 words; same as productive vocabulary","More than 100–150 words; receptive vocabulary exceeds productive vocabulary","Exactly 200 words; both are equal","300+ words; language is fully mature by 16 months"],
+answer:1,explanation:"By 16 months: receptive vocabulary (words UNDERSTOOD) = 100–150+ words. Productive vocabulary (words SPOKEN) is much smaller. By 12 months: understand ~50 words. Receptive always exceeds productive in early development — comprehension precedes production."},
+
+{topic:5,difficulty:"high",text:"Following gaze and pointing — which is a developmental milestone at 14 months?",
+options:["Infant can follow most pointing gestures","Infant can produce pointing gestures only","Adult follows infant's gaze","Infant understands abstract pointing only"],
+answer:0,explanation:"By 14 months: infant can follow MOST pointing gestures — a key developmental milestone for joint attention. Before 12 months: infant doesn't know what is being pointed at (just looks at the hand). By 12 months: learns joint reference. Absent in ASD and severe intellectual disability."},
+
+{topic:5,difficulty:"high",text:"The medial temporal lobe (hippocampus + parahippocampal gyrus) is central to which memory type?",
+options:["Procedural memory for motor skills","Declarative/episodic memory — conscious recollection of facts and events","Implicit conditioning","Automatic habits"],
+answer:1,explanation:"The medial temporal lobe = DECLARATIVE memory (facts + events). Damage → profound difficulty forming NEW declarative memories. Medial temporal lobe EPILEPSY can present with psychosis and visual hallucinations — a clinically important association in BHS."},
+
+{topic:5,difficulty:"tricky",text:"A child can understand the sentence 'The dog chases the cat' vs 'The cat chases the dog' as having different meanings. This reflects knowledge of:",
+options:["Semantics","Phonology","Syntax/Grammar — word order","Pragmatics"],
+answer:2,explanation:"Understanding that WORD ORDER changes meaning is SYNTAX/GRAMMAR. Semantics = individual word meanings. Phonology = sounds. Pragmatics = social context. Syntax allows infants (and later children) to extract meaning even from novel word combinations they have never heard before."},
+
+// ══════════════════════════════════════════════
+// LECTURE 6 — EARLY & LATE CHILDHOOD
+// ══════════════════════════════════════════════
+{topic:6,difficulty:"high",text:"A 4-year-old is shown a box labeled 'pencils' containing crayons. When asked what a friend who hasn't seen inside would think is in the box, the child says 'crayons.' This failure reflects absence of:",
+options:["Object permanence","Conservation","Theory of mind","Symbolic play"],
+answer:2,explanation:"Theory of mind (ToM) = understanding that others have beliefs, thoughts, and knowledge DIFFERENT from one's own. Develops between ages 4–4.5. Failing the false-belief task = ToM not yet established. ToM is also characteristically absent in ASD."},
+
+{topic:6,difficulty:"high",text:"Which of the following is NOT one of Chess and Thomas's 9 dimensions of temperament?",
+options:["Activity level","Rhythmicity","Intelligence","Threshold of responsiveness"],
+answer:2,explanation:"Intelligence is NOT a temperament dimension. The 9 Chess & Thomas dimensions: (1) Activity level, (2) Rhythmicity, (3) Approach/withdrawal, (4) Adaptability, (5) Threshold of responsiveness, (6) Intensity of reaction, (7) Quality of mood, (8) Distractibility, (9) Persistence."},
+
+{topic:6,difficulty:"high",text:"A 2-month-old cries intensely when even slightly wet, and rejects food forcefully when full. According to Chess and Thomas, this reflects difficulty with:",
+options:["Rhythmicity","Activity level","Intensity of reaction","Quality of mood"],
+answer:2,explanation:"INTENSITY OF REACTION = the strength/magnitude of the behavioral response. This infant has an intense reaction to minor stimuli (slight wetness, fullness). Related: THRESHOLD OF RESPONSIVENESS = how intense a stimulus must be to trigger a response. Low threshold + high intensity = very reactive child."},
+
+{topic:6,difficulty:"high",text:"A parent describes their toddler's nap times as unpredictable and toilet training as difficult due to irregular bowel movements. According to Chess and Thomas, this is difficulty with:",
+options:["Approach/withdrawal","Threshold of responsiveness","Intensity of reaction","Rhythmicity"],
+answer:3,explanation:"RHYTHMICITY = regularity of biological functions (sleep, eating, bowel movements). A child with poor rhythmicity has irregular biological cycles, making toilet training and sleep schedules very difficult. This is a key characteristic of the 'difficult' temperament type."},
+
+{topic:6,difficulty:"high",text:"Chess and Thomas described three temperament types. A child who is initially reluctant but gradually adjusts with repeated exposure has which temperament?",
+options:["Easy","Difficult","Slow-to-warm-up","Anxious"],
+answer:2,explanation:"Slow-to-warm-up: initially withdraws from new situations but GRADUALLY adjusts with repeated, patient exposure. Advice: expose to new things, don't let them stay in comfort zone too long, but don't force. Easy (40%): regular, adaptable, positive. Difficult (10%): irregular, intense negative reactions."},
+
+{topic:6,difficulty:"high",text:"'Goodness of fit' refers to:",
+options:["A child's genetic similarity to their parent","The MATCH between a child's temperament and the environmental demands/parental expectations","The quality of the mother-infant attachment bond","A parenting style applied equally to all children"],
+answer:1,explanation:"Goodness of fit (Chess & Thomas): well-being is optimized when there is a good MATCH between the child's temperament and the demands/expectations placed on them by parents and environment. A MISMATCH can lead to behavioral problems, low self-esteem, and strained parent-child relationships."},
+
+{topic:6,difficulty:"high",text:"True sexual/gender identity is established by age:",
+options:["18 months","24 months","36 months (3 years)","5 years"],
+answer:2,explanation:"According to Stoller, sexual/gender identity — the 'unquestioning, unthinking conviction that they are male or female' — is firmly established by 3 years (36 months). Early genital exploration begins at ~3 years and is part of normal development (not inappropriate touching)."},
+
+{topic:6,difficulty:"high",text:"Repression as a defense mechanism is characterized by:",
+options:["A conscious decision to forget distressing events","An AUTOMATIC, UNCONSCIOUS mechanism that bars distressing material from conscious awareness","Projecting feelings onto others","Intellectualizing emotional pain"],
+answer:1,explanation:"Repression = AUTOMATIC and UNCONSCIOUS. Starts emerging at 18 months, becomes prominent at 3 years. Adaptive in normal development; overused after trauma → PTSD-like presentations. It protects the child from overwhelming experiences. Distinguished from SUPPRESSION which is conscious."},
+
+{topic:6,difficulty:"high",text:"In the biopsychosocial processing model, the correct sequence of processing is:",
+options:["Emotional response → mental processing → output","Receiving stimulus → emotional response → mental processing → output response","Mental processing → stimulus reception → output","Output → reflection → new stimulus"],
+answer:1,explanation:"The sequence: (1) RECEIVING the biopsychosocial stimulus from the environment → (2) INITIAL EMOTIONAL RESPONSE is generated → (3) MENTAL CONTENTS are processed (internal motivators) → (4) OUTPUT (action or speech). Parallel to this: activation of self-reflection and capacity for relationship observation."},
+
+{topic:6,difficulty:"high",text:"Which of the following best describes superego anxiety?",
+options:["A healthy sense of right and wrong","An overwhelming, burdening guilt that affects all relationships — a 'mountain of guilt'","The same as primary anxiety","A feature only of formal operations stage"],
+answer:1,explanation:"Superego anxiety = when excessive guilt starts to BURDEN the person, affecting relationships (always trying to please to avoid guilt). A healthy superego requires: (1) knowing right from wrong, (2) believing they had a choice, (3) having made the bad choice. Parenting by excessive guilt formation creates superego anxiety."},
+
+{topic:6,difficulty:"high",text:"A parent always praises their child regardless of effort or outcome. The long-term developmental risk is:",
+options:["Excessive guilt (superego anxiety)","Unhealthy narcissism or narcissistic personality traits","Avoidant attachment style","Lower self-esteem"],
+answer:1,explanation:"Indiscriminate, unearned praise fails to build healthy pride linked to real achievement. Winnicott: some narcissism is healthy, but EXCESSIVE unhealthy narcissism — fueled by unearned praise — contributes to narcissistic personality development. Good pride = telling them they did a good job WHEN THEY ACTUALLY DID ONE."},
+
+{topic:6,difficulty:"high",text:"Which of the following is a major developmental task of EARLY childhood (3–6 years)?",
+options:["Developing an abstract sense of identity","Developing autonomous identity, gender identity, peer identity, sexual identity, and conscience","Completing formal operations","Understanding conventional moral conformity"],
+answer:1,explanation:"Major tasks of early childhood: autonomous identity (independent self), gender identity (male/female), sexual identity (beginning), peer identity (role in the group — leader, follower, pleaser), and conscience (beginning moral sense/superego). Social identity develops in LATE childhood."},
+
+{topic:6,difficulty:"high",text:"Which of the following correctly describes reproductive vs reconstructive memory in young children?",
+options:["Reproductive = fantasy; reconstructive = accurate recall","Reproductive = remembering things from the past; reconstructive = generating fantasy based on recalled memory","Both are the same process","Reconstructive memory is more accurate than reproductive"],
+answer:1,explanation:"Reproductive memory = remembering things that actually happened from the past. Reconstructive memory = generating a fantasy/story BASED ON a recalled memory — not lying, but trying to make better sense of self and feel better. Both are normal in young children."},
+
+// ══════════════════════════════════════════════
+// LECTURE 7 — LATE CHILDHOOD, ADOLESCENCE & GRIEF
+// ══════════════════════════════════════════════
+{topic:7,difficulty:"high",text:"A 35-year-old patient with terminal cancer continues attending work normally and says 'I've never felt better' when asked about their diagnosis. Which Kübler-Ross stage is this?",
+options:["Bargaining","Anger","Denial","Acceptance"],
+answer:2,explanation:"DENIAL: refusing to accept the reality of the diagnosis — a psychological protective mechanism. Adolescents and young adults tend to spend longest in denial and anger, making them non-compliant with treatment. Older adults and those with spiritual support reach acceptance faster."},
+
+{topic:7,difficulty:"high",text:"Which of the following is NOT a stage in the Kübler-Ross model?",
+options:["Depression","Anger","Bargaining","Acceptance","Delusions"],
+answer:4,explanation:"DELUSIONS is NOT a stage. The 5 stages are: Shock/Denial → Anger → Bargaining → Depression → Acceptance. Delusion is too similar to denial to be a separate stage — and is a symptom of mental illness, not a grief stage. The stages are not always linear."},
+
+{topic:7,difficulty:"high",text:"Which of the following is NOT part of normal grief?",
+options:["Transient hallucinations of the deceased","Survivor guilt","Dreaming of the deceased","Suicidal threats or attempts"],
+answer:3,explanation:"Suicidal threats/attempts are NOT part of NORMAL grief — they indicate ABNORMAL/COMPLICATED grief or major depressive disorder requiring clinical intervention. Normal grief CAN include hallucinations (seeing/hearing the deceased — not psychotic), survivor guilt, dreaming of deceased, sadness, anorexia, weakness."},
+
+{topic:7,difficulty:"high",text:"What is the KEY distinction between grief and major depression?",
+options:["Grief always resolves within 2 weeks","Grief = fluctuating mood reactive to a specific loss; Depression = persistent pervasive low mood with shame, guilt, suicidal ideation","Depression is always triggered by a specific loss","Grief always includes psychotic features"],
+answer:1,explanation:"GRIEF: fluctuating mood, reactive to loss reminders, tied to specific event, limited duration (~6 months to 1 year). DEPRESSION: persistent (most of the day, every day), pervasive, associated with shame/guilt, may include suicidal ideation, not necessarily triggered by a specific event."},
+
+{topic:7,difficulty:"high",text:"According to Bowlby's stages of grief, what occurs during Stage 1?",
+options:["Phase of disorganization and despair","Phase of reorganization","Acute despair and denial (moments to days)","Intense longing and physical restlessness"],
+answer:2,explanation:"Bowlby's 4 grief stages: Stage 1 = acute despair and denial (moments to days); Stage 2 = intense longing and physical restlessness (months); Stage 3 = disorganization and despair (insomnia, weight loss); Stage 4 = reorganization (deceased internalized, felt as always present)."},
+
+{topic:7,difficulty:"high",text:"According to Bowlby's childhood grief model, the three phases in order are:",
+options:["Despair → Protest → Detachment","Protest → Despair → Detachment","Detachment → Protest → Despair","Denial → Despair → Acceptance"],
+answer:1,explanation:"Childhood grief (Bowlby): (1) PROTEST — crying, searching for the deceased; (2) DESPAIR — withdrawal and sadness; (3) DETACHMENT — stops asking about the deceased. Advice: let it run its course; keep pictures; do not force remembrance or have weekly grief sessions."},
+
+{topic:7,difficulty:"high",text:"A patient says 'God, if you let me live I'll devote my life to charity.' Which Kübler-Ross stage is this?",
+options:["Anger","Bargaining","Depression","Acceptance"],
+answer:1,explanation:"BARGAINING: attempting to negotiate with a higher power (or medical team) in exchange for survival or more time. This is Stage 3 of Kübler-Ross and represents an attempt to REGAIN CONTROL in a helpless situation."},
+
+{topic:7,difficulty:"high",text:"Which of the following correctly describes the THREE levels of moral development?",
+options:["Punishment avoidance → Ethical principles → Social approval","Punishment/obedience → Social approval/conformity → Self-accepted ethical principles","Ethical principles → Punishment avoidance → Social conformity","Social conformity → Ethical principles → Punishment avoidance"],
+answer:1,explanation:"(1) Pre-conventional: punishment and obedience are determining factors — 'I won't do it because I'll get punished.' (2) Conventional role-conformity: seeking approval of others — 'I'll do it to be liked.' (3) Self-accepted moral principles: internalized ethics — 'I do it because it is right.'"},
+
+{topic:7,difficulty:"high",text:"Late childhood (6–12 years) is characterized by all of the following EXCEPT:",
+options:["Understanding others' perspectives","Logical reasoning about concrete things","Understanding reversibility and conservation","Magical thinking as primary cognitive style"],
+answer:3,explanation:"Magical thinking and egocentrism are features of PREOPERATIONAL stage (2–7 years). Late childhood (concrete operations): perspective-taking, logical reasoning about concrete things, conservation, reversibility, complex categories, beginning moral sense — but NOT abstract reasoning."},
+
+{topic:7,difficulty:"high",text:"Negativism in adolescence is BEST described as:",
+options:["A psychiatric disorder requiring immediate intervention","A developmentally NORMAL variant seen in MANY (not all) teenagers — seeing everything as dark or terrible","A reliable indicator of major depressive disorder","A sign of conduct disorder"],
+answer:1,explanation:"Negativism = adolescent tendency to view everything as bad/terrible/dark. It is a NORMAL developmental variant seen in many teenagers as part of individuation from parents. It is NOT universal. It becomes pathological only when it significantly impairs functioning or meets criteria for clinical depression."},
+
+{topic:7,difficulty:"high",text:"According to Vaillant, which factor is MOST strongly associated with well-being in middle and late adulthood?",
+options:["High IQ during childhood","Close sibling relationships during college AND general stability at home","Career success before age 40","Financial independence by age 35"],
+answer:1,explanation:"Vaillant's key findings: (1) Strong correlation between physical and emotional well-being; (2) Poor psychological adjustment during college → higher physical illness in middle age; (3) General STABILITY AT HOME → well-adjusted adult; (4) Close SIBLING RELATIONSHIPS during college → well-being in middle age."},
+
+{topic:7,difficulty:"high",text:"A 5-year-old child thinks death 'is like going to sleep' and that the deceased will 'wake up.' This reflects which Piagetian stage?",
+options:["Sensorimotor","Preoperational","Concrete operations","Formal operations"],
+answer:1,explanation:"PREOPERATIONAL (2–7 years, ~age 5): death seen as reversible, like sleep. Age 5–10 (Concrete): senses inevitable mortality, fears parental death. Age 9–10: understands death can happen to anyone. PUBERTY (Formal operations): death is irreversible and universal."},
+
+{topic:7,difficulty:"high",text:"What is anticipatory grief?",
+options:["Grief that begins BEFORE the anticipated death of a loved one","Grief occurring suddenly without warning","Grief characterized by absent emotional expression","Grief occurring more than 1 year after a loss"],
+answer:0,explanation:"Anticipatory grief: begins BEFORE the actual death — when a loved one has a terminal diagnosis or is elderly. It can INCREASE or DECREASE as the anticipated death becomes more imminent, depending on relationship, circumstances, and level of spirituality."},
+
+{topic:7,difficulty:"high",text:"Who is at risk of ABNORMAL grief? Select the best comprehensive answer.",
+options:["Only children who lose a parent","Sudden/horrific loss; socially isolated; blames themselves; history of traumatic losses; dependent on the deceased","Only those with prior psychiatric history","Anyone who cries for more than 2 weeks"],
+answer:1,explanation:"Risk factors for abnormal grief: (1) Sudden loss or horrific circumstances; (2) Socially isolated; (3) Believes they are responsible for the death; (4) History of traumatic losses; (5) Highly dependent on the lost person. Abnormal grief ranges from absent/delayed to prolonged with suicidal ideation or frank psychosis."},
+
+{topic:7,difficulty:"high",text:"Empty Nest Syndrome refers to:",
+options:["A child's distress when a parent leaves for work","A parent's psychological distress or depression when their last child leaves home — loss of purpose","The developmental crisis of early adulthood","Adolescent negativism toward parents"],
+answer:1,explanation:"Empty Nest Syndrome: when a parent's identity was predominantly defined by their PARENTING ROLE. When children leave, these parents experience profound loss of purpose, depression, or marital crisis. Sets the stage for increased mental health risk at ages 50–55. Some parents were staying together 'only for the kids.'"},
+
+{topic:7,difficulty:"high",text:"Puberty differs from adolescence in that:",
+options:["Puberty is a psychological process; adolescence is biological","Puberty is a BIOLOGICAL process (maturation of HPA-gonadal axes); adolescence is a PSYCHOLOGICAL process","Both are the same process","Puberty occurs after adolescence"],
+answer:1,explanation:"PUBERTY = biological maturation of the hypothalamic-pituitary-adrenal-gonadal axes — primary and secondary sexual characteristics. ADOLESCENCE = psychological process of identity formation, cognitive development, and social reorganization. Precocious puberty (early or late) causes psychological distress, especially in girls."},
+
+{topic:7,difficulty:"high",text:"Ageism, as described by Butler, refers to:",
+options:["Elderly people discriminating against younger generations","Discrimination toward elderly people based on stereotypes — implying loneliness, poor health, senility, and weakness","Normal aging changes in brain function","The legal rights of elderly patients"],
+answer:1,explanation:"Ageism (Butler): discrimination and stereotyping toward elderly people — assuming they are lonely, ill, senile, and weak. However, with better healthcare systems, many elderly people today have better lifestyle and health than people actually younger than them. Challenging ageism is clinically important."},
+
+];
+
+// ── STATE ──
+let answered = {}, correctCount = 0;
+
+function render() {
+  const container = document.getElementById('qContainer');
+  container.innerHTML = '';
+  const filter = window.currentFilter || 'all';
+  const filtered = filter === 'all' ? questions : questions.filter(q => q.topic == filter);
+  document.getElementById('totalCount').textContent = filtered.length;
+
+  const topics = {
+    1:{label:"Lecture 1 — Prenatal & Intro Development",icon:"🧠"},
+    2:{label:"Lecture 2 — Infant Social Development I",icon:"👶"},
+    3:{label:"Lecture 3 — Infant Social Development II",icon:"🎭"},
+    4:{label:"Lecture 4 — Infant Cognitive Development I",icon:"🔍"},
+    5:{label:"Lecture 5 — Infant Cognitive Development II",icon:"💬"},
+    6:{label:"Lecture 6 — Early & Late Childhood",icon:"🌱"},
+    7:{label:"Lecture 7 — Late Childhood, Adolescence & Grief",icon:"⚖️"},
+  };
+
+  let lastTopic = null, qNum = 0;
+  filtered.forEach(q => {
+    const gi = questions.indexOf(q);
+    if (q.topic !== lastTopic) {
+      if (filter === 'all') {
+        const th = document.createElement('div');
+        th.className = 'topic-header';
+        th.innerHTML = `<span class="topic-icon">${topics[q.topic].icon}</span>${topics[q.topic].label}`;
+        container.appendChild(th);
+      }
+      lastTopic = q.topic;
+    }
+    qNum++;
+    const card = document.createElement('div');
+    card.className = 'q-card'; card.id = `q${gi}`;
+    const bc = {high:'badge-high',med:'badge-med',tricky:'badge-tricky'}[q.difficulty];
+    const bl = {high:'★ High Yield',med:'Core Concept',tricky:'⚡ Tricky'}[q.difficulty];
+    const letters = ['A','B','C','D','E'];
+    const opts = q.options.map((o,i)=>`<button class="option" data-q="${gi}" data-i="${i}" onclick="selectOption(${gi},${i})"><span class="opt-letter">${letters[i]}</span><span>${o}</span></button>`).join('');
+    card.innerHTML = `<div class="q-meta"><span class="q-num">Q${qNum}</span><span class="q-badge ${bc}">${bl}</span></div><div class="q-text">${q.text}</div><div class="options">${opts}</div><div class="explanation" id="exp${gi}"><strong>Explanation:</strong> ${q.explanation}</div>`;
+    container.appendChild(card);
+    if (answered[gi] !== undefined) restoreCard(card, gi, answered[gi], q.answer);
+  });
+  updateScore();
+}
+
+function selectOption(qi, oi) {
+  if (answered[qi] !== undefined) return;
+  answered[qi] = oi;
+  if (oi === questions[qi].answer) correctCount++;
+  restoreCard(document.getElementById(`q${qi}`), qi, oi, questions[qi].answer);
+  updateScore();
+}
+
+function restoreCard(card, qi, chosen, correct) {
+  card.querySelectorAll('.option').forEach((btn,i) => {
+    btn.disabled = true;
+    if (i === correct) btn.classList.add(chosen === correct ? 'correct' : 'reveal-correct');
+    if (i === chosen && chosen !== correct) btn.classList.add('wrong');
+  });
+  card.classList.add(chosen === correct ? 'answered-correct' : 'answered-wrong');
+  document.getElementById(`exp${qi}`).classList.add('show');
+}
+
+function updateScore() {
+  const total = Object.keys(answered).length;
+  document.getElementById('scoreDisplay').textContent = correctCount;
+  document.getElementById('headerScore').textContent = `${correctCount} / ${total}`;
+  const all = (window.currentFilter === 'all' ? questions : questions.filter(q => q.topic == window.currentFilter)).length;
+  document.getElementById('progressFill').style.width = all > 0 ? `${(total/all)*100}%` : '0%';
+}
+
+function resetAll() {
+  answered = {}; correctCount = 0; render();
+}
+
+document.getElementById('topicFilter').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  window.currentFilter = btn.dataset.topic;
+  render();
+});
+
+window.currentFilter = 'all';
+render();
+</script>
+</body>
+</html>
